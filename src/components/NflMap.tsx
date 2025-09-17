@@ -2,87 +2,46 @@
 
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { geoVoronoi } from "d3-geo-voronoi";
-import * as turf from "@turf/turf";
-import { stadiums } from "@/data/stadiums";
 import { useEffect, useState } from "react";
-import { Feature, FeatureCollection, Polygon, MultiPolygon } from "geojson";
-
-type ClippedFeature = Feature<
-  Polygon | MultiPolygon,
-  {
-    team: string;
-    color: string;
-  }
->;
+import * as d3 from "d3";
+import * as topojson from "topojson-client";
+import { Topology } from "topojson-specification";
+import { FeatureCollection } from "geojson";
 
 export default function NflMap() {
-  const [voronoiRegions, setVoronoiRegions] =
-    useState<FeatureCollection | null>(null);
+  // State to hold the GeoJSON data for the US states
+  const [usStates, setUsStates] = useState<FeatureCollection | null>(null);
 
   useEffect(() => {
-    const generateMapData = async () => {
-      // 1. Fetch the US states file
-      const response = await fetch("/us-states.json");
-      const usStates = (await response.json()) as FeatureCollection;
+    // This function fetches the map data when the component loads
+    const getMapData = async () => {
+      try {
+        console.log("Fetching US map data...");
+        // Fetch a standard US geography file from a reliable CDN
+        const usTopology = (await d3.json(
+          "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json",
+        )) as Topology;
 
-      // Create US outline by flattening and dissolving state shapes
-      const flattened = turf.flatten(usStates);
-      const dissolved = turf.dissolve(flattened);
+        // Convert the TopoJSON data into a GeoJSON FeatureCollection
+        const geoJson = topojson.feature(
+          usTopology,
+          usTopology.objects.states,
+        ) as FeatureCollection;
 
-      if (!dissolved.features.length) {
-        console.error("Could not create a valid US outline.");
-        return;
+        console.log("Successfully loaded and converted map data:", geoJson);
+        setUsStates(geoJson);
+      } catch (error) {
+        console.error("Failed to load map data:", error);
       }
-      const usOutline = dissolved.features[0];
-
-      // 2. Prepare stadium points
-      const pointFeatures = stadiums.map((s) =>
-        turf.point(s.coordinates, { team: s.team, color: s.color }),
-      );
-      const points = turf.featureCollection(pointFeatures);
-
-      // 3. Calculate the Voronoi diagram
-      const voronoi = geoVoronoi(points);
-      const polygons = voronoi.polygons();
-
-      // 4. Clip each Voronoi region
-      const clippedRegions = polygons.features
-        .filter(
-          (feature) =>
-            feature &&
-            feature.geometry &&
-            feature.geometry.coordinates &&
-            feature.geometry.coordinates.length > 0 &&
-            feature.geometry.coordinates[0].length > 0,
-        )
-        .map((feature: Feature<Polygon | MultiPolygon>) => {
-          try {
-            const clipped = turf.intersect(feature, usOutline);
-            if (clipped && feature.properties && feature.properties.site) {
-              clipped.properties = feature.properties.site.properties;
-            }
-            return clipped;
-          } catch (e) {
-            console.error("Error intersecting feature:", feature, e);
-            return null;
-          }
-        })
-        .filter(Boolean) as ClippedFeature[];
-
-      setVoronoiRegions({
-        type: "FeatureCollection",
-        features: clippedRegions,
-      });
     };
 
-    generateMapData();
-  }, []);
+    getMapData();
+  }, []); // The empty array [] ensures this runs only once
 
-  // Style function for GeoJSON layers
-  const styleFeature = (feature?: Feature) => {
+  // This function assigns a random color to each state
+  const getStateStyle = () => {
     return {
-      fillColor: feature?.properties?.color || "#cccccc",
+      fillColor: `hsl(${Math.random() * 360}, 100%, 50%)`, // Random hue
       weight: 1,
       color: "white",
       fillOpacity: 0.7,
@@ -91,15 +50,17 @@ export default function NflMap() {
 
   return (
     <MapContainer
-      center={[39.8283, -98.5795]}
+      center={[39.8283, -98.5795]} // Center of the US
       zoom={4}
       style={{ height: "100vh", width: "100%" }}
+      scrollWheelZoom={true}
     >
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
       />
-      {voronoiRegions && <GeoJSON data={voronoiRegions} style={styleFeature} />}
+      {/* If usStates data exists, render it on the map */}
+      {usStates && <GeoJSON data={usStates} style={getStateStyle} />}
     </MapContainer>
   );
 }
