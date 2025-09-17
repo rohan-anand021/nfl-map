@@ -5,8 +5,8 @@ import * as d3 from "d3";
 import { geoVoronoi } from "d3-geo-voronoi";
 import * as topojson from "topojson-client";
 import { Topology } from "topojson-specification";
-import { stadiums } from "@/data/stadiums";
-import { Feature, FeatureCollection, Point } from "geojson";
+import { stadiums, Stadium } from "@/data/stadiums";
+import { Feature, Point } from "geojson";
 import * as turf from "@turf/turf";
 
 // Define the properties for our stadium points
@@ -25,13 +25,18 @@ const uniqueStadiums = stadiums.filter(
     index === self.findIndex((s) => s.stadium === stadium.stadium),
 );
 
+// Define a combined type for the data passed to the event handlers
+type HoverData = Stadium | d3.GeoPermissibleObjects;
+
 export default function NflMap() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
+    const currentContainer = containerRef.current;
+
     const generateAndDrawMap = async () => {
-      if (!svgRef.current || !containerRef.current) return;
+      if (!svgRef.current || !currentContainer) return;
 
       try {
         // --- Data Preparation ---
@@ -77,7 +82,7 @@ export default function NflMap() {
 
         // --- Tooltip Setup ---
         const tooltip = d3
-          .select(containerRef.current)
+          .select(currentContainer)
           .append("div")
           .attr(
             "class",
@@ -85,9 +90,19 @@ export default function NflMap() {
           );
 
         // Tooltip event handlers
-        const handleMouseOver = (event: MouseEvent, d: any) => {
-          const stadiumName =
-            d.stadium || d.properties?.site?.properties?.stadium;
+        const handleMouseOver = (event: MouseEvent, d: HoverData) => {
+          const isStadium = (data: HoverData): data is Stadium => {
+            return (data as Stadium).stadium !== undefined;
+          };
+
+          let stadiumName: string | undefined;
+
+          if (isStadium(d)) {
+            stadiumName = d.stadium;
+          } else {
+            stadiumName = (d as any).properties?.site?.properties?.stadium;
+          }
+
           if (!stadiumName) return;
 
           const teamsInStadium = stadiums.filter(
@@ -110,9 +125,13 @@ export default function NflMap() {
         };
 
         const handleMouseMove = (event: MouseEvent) => {
-          // Use d3.pointer to get coordinates relative to the container
-          const [x, y] = d3.pointer(event, containerRef.current);
-          tooltip.style("left", x + 10 + "px").style("top", y - 28 + "px");
+          // This is the definitive positioning logic
+          if (!currentContainer) return;
+          const containerRect = currentContainer.getBoundingClientRect();
+          const x = event.clientX - containerRect.left + 15; // 15px offset from cursor
+          const y = event.clientY - containerRect.top - 28; // 28px offset to appear above cursor
+
+          tooltip.style("left", x + "px").style("top", y + "px");
         };
 
         const handleMouseOut = () => {
@@ -201,7 +220,7 @@ export default function NflMap() {
     generateAndDrawMap();
 
     return () => {
-      d3.select(containerRef.current).select(".tooltip").remove();
+      d3.select(currentContainer).select(".tooltip").remove();
     };
   }, []);
 
