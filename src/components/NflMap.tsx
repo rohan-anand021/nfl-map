@@ -65,6 +65,7 @@ export default function NflMap() {
         const width = 975;
         const height = 610;
         svg.attr("viewBox", `0 0 ${width} ${height}`);
+        svg.attr("width", "100%").attr("height", "100%");
 
         const projection = d3
           .geoAlbersUsa()
@@ -83,6 +84,41 @@ export default function NflMap() {
             "absolute text-center w-auto max-w-xs p-2 text-xs font-sans bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pointer-events-none opacity-0 transition-opacity duration-200 flex flex-col items-center gap-2 shadow-lg",
           );
 
+        // Tooltip event handlers
+        const handleMouseOver = (event: MouseEvent, d: any) => {
+          const stadiumName =
+            d.stadium || d.properties?.site?.properties?.stadium;
+          if (!stadiumName) return;
+
+          const teamsInStadium = stadiums.filter(
+            (s) => s.stadium === stadiumName,
+          );
+
+          let tooltipHtml = `<span class="font-bold">${stadiumName}</span><div class="flex items-center justify-center gap-2">`;
+          teamsInStadium.forEach((team) => {
+            tooltipHtml += `
+                <div class="flex flex-col items-center">
+                  <img src="${team.logoUrl}" alt="${team.team} logo" class="w-[50px] h-auto" />
+                  <span class="text-xs">${team.team}</span>
+                </div>
+              `;
+          });
+          tooltipHtml += `</div>`;
+
+          tooltip.style("opacity", 1);
+          tooltip.html(tooltipHtml);
+        };
+
+        const handleMouseMove = (event: MouseEvent) => {
+          // Use d3.pointer to get coordinates relative to the container
+          const [x, y] = d3.pointer(event, containerRef.current);
+          tooltip.style("left", x + 10 + "px").style("top", y - 28 + "px");
+        };
+
+        const handleMouseOut = () => {
+          tooltip.style("opacity", 0);
+        };
+
         svg
           .append("clipPath")
           .attr("id", "map-clip")
@@ -97,7 +133,11 @@ export default function NflMap() {
           .data(voronoiPolygons.features)
           .join("path")
           .attr("fill", (d: any) => d.properties.site.properties.color)
-          .attr("fill-opacity", 0.8);
+          .attr("fill-opacity", 0.8)
+          .style("cursor", "pointer")
+          .on("mouseover", handleMouseOver)
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
 
         svg
           .append("path")
@@ -114,11 +154,10 @@ export default function NflMap() {
 
         svg.selectAll("path").attr("d", pathGenerator);
 
-        // --- Stadium Dots with Tooltip Events ---
         svg
           .append("g")
           .selectAll("circle")
-          .data(uniqueStadiums) // Use uniqueStadiums to avoid duplicate dots
+          .data(uniqueStadiums)
           .join("circle")
           .attr(
             "transform",
@@ -130,40 +169,14 @@ export default function NflMap() {
           .attr("stroke", "white")
           .attr("stroke-width", 0.5)
           .style("cursor", "pointer")
-          .on("mouseover", (event, d) => {
-            // Find all teams that share the same stadium
-            const teamsInStadium = stadiums.filter(
-              (s) => s.stadium === d.stadium,
-            );
-
-            // Build the tooltip HTML
-            let tooltipHtml = `<span class="font-bold">${d.stadium}</span><div class="flex items-center justify-center gap-2">`;
-            teamsInStadium.forEach((team) => {
-              tooltipHtml += `
-                <div class="flex flex-col items-center">
-                  <img src="${team.logoUrl}" alt="${team.team} logo" class="w-[50px] h-auto" />
-                  <span class="text-xs">${team.team}</span>
-                </div>
-              `;
-            });
-            tooltipHtml += `</div>`;
-
-            tooltip.style("opacity", 1);
-            tooltip.html(tooltipHtml);
-          })
-          .on("mousemove", (event) => {
-            tooltip
-              .style("left", event.pageX + 10 + "px")
-              .style("top", event.pageY - 28 + "px");
-          })
-          .on("mouseout", () => {
-            tooltip.style("opacity", 0);
-          });
+          .on("mouseover", handleMouseOver)
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
 
         svg
           .append("g")
           .selectAll("text")
-          .data(uniqueStadiums) // Use uniqueStadiums to avoid duplicate labels
+          .data(uniqueStadiums)
           .join("text")
           .attr(
             "transform",
@@ -197,7 +210,7 @@ export default function NflMap() {
       ref={containerRef}
       style={{
         width: "100%",
-        height: "100vh",
+        height: "100%",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
