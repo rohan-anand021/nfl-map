@@ -13,6 +13,8 @@ import * as turf from "@turf/turf";
 interface StadiumProperties {
   team: string;
   stadium: string;
+  city: string;
+  teamCity: string;
   color: string;
 }
 
@@ -42,6 +44,8 @@ export default function NflMap() {
             properties: {
               team: s.team,
               stadium: s.stadium,
+              city: s.city,
+              teamCity: s.teamCity,
               color: s.color,
             },
             geometry: {
@@ -118,6 +122,28 @@ export default function NflMap() {
           .attr("fill", "black")
           .attr("stroke", "white")
           .attr("stroke-width", 0.5);
+
+        // Add city names above the dots
+        svg
+          .append("g")
+          .selectAll("text")
+          .data(stadiums)
+          .join("text")
+          .attr(
+            "transform",
+            (d) =>
+              `translate(${projection([d.coordinates[1], d.coordinates[0]])})`,
+          )
+          .attr("dy", "-0.5em") // Position text above the dot
+          .attr("text-anchor", "middle") // Center the text
+          .style("font-size", "8px") // Make the font small
+          .style("fill", "black")
+          .style("paint-order", "stroke")
+          .style("stroke", "white")
+          .style("stroke-width", "2px")
+          .style("stroke-linecap", "butt")
+          .style("stroke-linejoin", "miter")
+          .text((d) => d.teamCity); // Use teamCity for the label
       } catch (error) {
         console.error("Failed to generate and draw map:", error);
       }
