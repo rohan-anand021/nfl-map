@@ -19,14 +19,23 @@ interface StadiumProperties {
   logoUrl: string;
 }
 
+// Define the structure of the data that D3's geoVoronoi attaches
+interface VoronoiFeature extends d3.GeoPermissibleObjects {
+  properties: {
+    site: {
+      properties: StadiumProperties;
+    };
+  };
+}
+
+// A combined type for the data passed to the event handlers
+type HoverData = Stadium | VoronoiFeature;
+
 // Filter for unique stadiums to avoid Voronoi conflicts
 const uniqueStadiums = stadiums.filter(
   (stadium, index, self) =>
     index === self.findIndex((s) => s.stadium === stadium.stadium),
 );
-
-// Define a combined type for the data passed to the event handlers
-type HoverData = Stadium | d3.GeoPermissibleObjects;
 
 export default function NflMap() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -39,7 +48,6 @@ export default function NflMap() {
       if (!svgRef.current || !currentContainer) return;
 
       try {
-        // --- Data Preparation ---
         const usTopology = (await d3.json(
           "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json",
         )) as Topology;
@@ -47,14 +55,7 @@ export default function NflMap() {
         const stadiumPoints: Feature<Point, StadiumProperties>[] =
           uniqueStadiums.map((s) => ({
             type: "Feature",
-            properties: {
-              team: s.team,
-              stadium: s.stadium,
-              city: s.city,
-              teamCity: s.teamCity,
-              color: s.color,
-              logoUrl: s.logoUrl,
-            },
+            properties: { ...s },
             geometry: {
               type: "Point",
               coordinates: [s.coordinates[1], s.coordinates[0]],
@@ -63,14 +64,15 @@ export default function NflMap() {
         const stadiumFeatureCollection = turf.featureCollection(stadiumPoints);
         const voronoiPolygons = geoVoronoi(stadiumFeatureCollection).polygons();
 
-        // --- SVG Drawing ---
         const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove();
 
         const width = 975;
         const height = 610;
-        svg.attr("viewBox", `0 0 ${width} ${height}`);
-        svg.attr("width", "100%").attr("height", "100%");
+        svg
+          .attr("viewBox", `0 0 ${width} ${height}`)
+          .attr("width", "100%")
+          .attr("height", "100%");
 
         const projection = d3
           .geoAlbersUsa()
@@ -80,7 +82,6 @@ export default function NflMap() {
           );
         const pathGenerator = d3.geoPath(projection);
 
-        // --- Tooltip Setup ---
         const tooltip = d3
           .select(currentContainer)
           .append("div")
@@ -89,54 +90,39 @@ export default function NflMap() {
             "absolute text-center w-auto max-w-xs p-2 text-xs font-sans bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pointer-events-none opacity-0 transition-opacity duration-200 flex flex-col items-center gap-2 shadow-lg",
           );
 
-        // Tooltip event handlers
         const handleMouseOver = (event: MouseEvent, d: HoverData) => {
-          const isStadium = (data: HoverData): data is Stadium => {
-            return (data as Stadium).stadium !== undefined;
-          };
+          const isStadium = (data: HoverData): data is Stadium =>
+            (data as Stadium).stadium !== undefined;
 
-          let stadiumName: string | undefined;
-
-          if (isStadium(d)) {
-            stadiumName = d.stadium;
-          } else {
-            stadiumName = (d as any).properties?.site?.properties?.stadium;
-          }
-
+          const stadiumName = isStadium(d)
+            ? d.stadium
+            : (d as VoronoiFeature).properties.site.properties.stadium;
           if (!stadiumName) return;
 
           const teamsInStadium = stadiums.filter(
             (s) => s.stadium === stadiumName,
           );
-
           let tooltipHtml = `<span class="font-bold">${stadiumName}</span><div class="flex items-center justify-center gap-2">`;
           teamsInStadium.forEach((team) => {
             tooltipHtml += `
                 <div class="flex flex-col items-center">
                   <img src="${team.logoUrl}" alt="${team.team} logo" class="w-[50px] h-auto" />
                   <span class="text-xs">${team.team}</span>
-                </div>
-              `;
+                </div>`;
           });
           tooltipHtml += `</div>`;
-
-          tooltip.style("opacity", 1);
-          tooltip.html(tooltipHtml);
+          tooltip.style("opacity", 1).html(tooltipHtml);
         };
 
         const handleMouseMove = (event: MouseEvent) => {
-          // This is the definitive positioning logic
           if (!currentContainer) return;
           const containerRect = currentContainer.getBoundingClientRect();
-          const x = event.clientX - containerRect.left + 15; // 15px offset from cursor
-          const y = event.clientY - containerRect.top - 28; // 28px offset to appear above cursor
-
-          tooltip.style("left", x + "px").style("top", y + "px");
+          const x = event.clientX - containerRect.left + 15;
+          const y = event.clientY - containerRect.top - 28;
+          tooltip.style("left", `${x}px`).style("top", `${y}px`);
         };
 
-        const handleMouseOut = () => {
-          tooltip.style("opacity", 0);
-        };
+        const handleMouseOut = () => tooltip.style("opacity", 0);
 
         svg
           .append("clipPath")
@@ -151,10 +137,13 @@ export default function NflMap() {
           .selectAll("path")
           .data(voronoiPolygons.features)
           .join("path")
-          .attr("fill", (d: any) => d.properties.site.properties.color)
+          .attr(
+            "fill",
+            (d) => (d as VoronoiFeature).properties.site.properties.color,
+          )
           .attr("fill-opacity", 0.8)
           .style("cursor", "pointer")
-          .on("mouseover", handleMouseOver)
+          .on("mouseover", handleMouseOver as any) // Use 'as any' here to bridge D3's event typing with our specific HoverData
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
 
@@ -170,7 +159,6 @@ export default function NflMap() {
           .attr("fill", "none")
           .attr("stroke", "white")
           .attr("stroke-linejoin", "round");
-
         svg.selectAll("path").attr("d", pathGenerator);
 
         svg
@@ -188,7 +176,7 @@ export default function NflMap() {
           .attr("stroke", "white")
           .attr("stroke-width", 0.5)
           .style("cursor", "pointer")
-          .on("mouseover", handleMouseOver)
+          .on("mouseover", handleMouseOver as any)
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
 
@@ -209,8 +197,6 @@ export default function NflMap() {
           .style("paint-order", "stroke")
           .style("stroke", "white")
           .style("stroke-width", "2px")
-          .style("stroke-linecap", "butt")
-          .style("stroke-linejoin", "miter")
           .text((d) => d.teamCity);
       } catch (error) {
         console.error("Failed to generate and draw map:", error);
@@ -218,7 +204,6 @@ export default function NflMap() {
     };
 
     generateAndDrawMap();
-
     return () => {
       d3.select(currentContainer).select(".tooltip").remove();
     };
