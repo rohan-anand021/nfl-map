@@ -16,6 +16,7 @@ interface StadiumProperties {
   city: string;
   teamCity: string;
   color: string;
+  logoUrl: string;
 }
 
 // Filter for unique stadiums to avoid Voronoi conflicts
@@ -25,12 +26,12 @@ const uniqueStadiums = stadiums.filter(
 );
 
 export default function NflMap() {
-  // A ref to hold the SVG element
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
     const generateAndDrawMap = async () => {
-      if (!svgRef.current) return;
+      if (!svgRef.current || !containerRef.current) return;
 
       try {
         // --- Data Preparation ---
@@ -47,6 +48,7 @@ export default function NflMap() {
               city: s.city,
               teamCity: s.teamCity,
               color: s.color,
+              logoUrl: s.logoUrl,
             },
             geometry: {
               type: "Point",
@@ -58,7 +60,7 @@ export default function NflMap() {
 
         // --- SVG Drawing ---
         const svg = d3.select(svgRef.current);
-        svg.selectAll("*").remove(); // Clear previous content
+        svg.selectAll("*").remove();
 
         const width = 975;
         const height = 610;
@@ -72,7 +74,15 @@ export default function NflMap() {
           );
         const pathGenerator = d3.geoPath(projection);
 
-        // Define a clipping path to the US outline
+        // --- Tooltip Setup ---
+        const tooltip = d3
+          .select(containerRef.current)
+          .append("div")
+          .attr(
+            "class",
+            "absolute text-center w-auto max-w-xs p-2 text-xs font-sans bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pointer-events-none opacity-0 transition-opacity duration-200 flex flex-col items-center gap-2 shadow-lg",
+          );
+
         svg
           .append("clipPath")
           .attr("id", "map-clip")
@@ -80,7 +90,6 @@ export default function NflMap() {
           .datum(topojson.feature(usTopology, usTopology.objects.states))
           .attr("d", pathGenerator);
 
-        // Draw the colored Voronoi regions, clipped to the path
         svg
           .append("g")
           .attr("clip-path", "url(#map-clip)")
@@ -90,7 +99,6 @@ export default function NflMap() {
           .attr("fill", (d: any) => d.properties.site.properties.color)
           .attr("fill-opacity", 0.8);
 
-        // Draw the state borders
         svg
           .append("path")
           .datum(
@@ -104,14 +112,13 @@ export default function NflMap() {
           .attr("stroke", "white")
           .attr("stroke-linejoin", "round");
 
-        // Redraw all paths with the projection
         svg.selectAll("path").attr("d", pathGenerator);
 
-        // Draw the black stadium dots on top
+        // --- Stadium Dots with Tooltip Events ---
         svg
           .append("g")
           .selectAll("circle")
-          .data(stadiums)
+          .data(uniqueStadiums) // Use uniqueStadiums to avoid duplicate dots
           .join("circle")
           .attr(
             "transform",
@@ -121,45 +128,80 @@ export default function NflMap() {
           .attr("r", 3)
           .attr("fill", "black")
           .attr("stroke", "white")
-          .attr("stroke-width", 0.5);
+          .attr("stroke-width", 0.5)
+          .style("cursor", "pointer")
+          .on("mouseover", (event, d) => {
+            // Find all teams that share the same stadium
+            const teamsInStadium = stadiums.filter(
+              (s) => s.stadium === d.stadium,
+            );
 
-        // Add city names above the dots
+            // Build the tooltip HTML
+            let tooltipHtml = `<span class="font-bold">${d.stadium}</span><div class="flex items-center justify-center gap-2">`;
+            teamsInStadium.forEach((team) => {
+              tooltipHtml += `
+                <div class="flex flex-col items-center">
+                  <img src="${team.logoUrl}" alt="${team.team} logo" class="w-[50px] h-auto" />
+                  <span class="text-xs">${team.team}</span>
+                </div>
+              `;
+            });
+            tooltipHtml += `</div>`;
+
+            tooltip.style("opacity", 1);
+            tooltip.html(tooltipHtml);
+          })
+          .on("mousemove", (event) => {
+            tooltip
+              .style("left", event.pageX + 10 + "px")
+              .style("top", event.pageY - 28 + "px");
+          })
+          .on("mouseout", () => {
+            tooltip.style("opacity", 0);
+          });
+
         svg
           .append("g")
           .selectAll("text")
-          .data(stadiums)
+          .data(uniqueStadiums) // Use uniqueStadiums to avoid duplicate labels
           .join("text")
           .attr(
             "transform",
             (d) =>
               `translate(${projection([d.coordinates[1], d.coordinates[0]])})`,
           )
-          .attr("dy", "-0.5em") // Position text above the dot
-          .attr("text-anchor", "middle") // Center the text
-          .style("font-size", "8px") // Make the font small
+          .attr("dy", "-0.5em")
+          .attr("text-anchor", "middle")
+          .style("font-size", "8px")
           .style("fill", "black")
           .style("paint-order", "stroke")
           .style("stroke", "white")
           .style("stroke-width", "2px")
           .style("stroke-linecap", "butt")
           .style("stroke-linejoin", "miter")
-          .text((d) => d.teamCity); // Use teamCity for the label
+          .text((d) => d.teamCity);
       } catch (error) {
         console.error("Failed to generate and draw map:", error);
       }
     };
 
     generateAndDrawMap();
+
+    return () => {
+      d3.select(containerRef.current).select(".tooltip").remove();
+    };
   }, []);
 
   return (
     <div
+      ref={containerRef}
       style={{
         width: "100%",
         height: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        position: "relative",
       }}
     >
       <svg ref={svgRef}></svg>

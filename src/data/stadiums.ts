@@ -2,9 +2,10 @@ export interface Stadium {
   team: string;
   stadium: string;
   city: string;
-  teamCity: string; // Added teamCity
+  teamCity: string;
   color: string;
   coordinates: [number, number];
+  logoUrl: string;
 }
 
 export const stadiums: Stadium[] = [
@@ -15,6 +16,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Arizona",
     color: "#97233F",
     coordinates: [33.5276, -112.2626],
+    logoUrl: "/logos/Arizona_Cardinals_logo.svg",
   },
   {
     team: "Atlanta Falcons",
@@ -23,6 +25,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Atlanta",
     color: "#A71930",
     coordinates: [33.7554, -84.4009],
+    logoUrl: "/logos/Atlanta_Falcons_logo.svg",
   },
   {
     team: "Baltimore Ravens",
@@ -31,6 +34,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Baltimore",
     color: "#241773",
     coordinates: [39.278, -76.6228],
+    logoUrl: "/logos/Baltimore_Ravens_logo.svg",
   },
   {
     team: "Buffalo Bills",
@@ -39,6 +43,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Buffalo",
     color: "#00338D",
     coordinates: [42.7737, -78.7869],
+    logoUrl: "/logos/Buffalo_Bills_logo.svg",
   },
   {
     team: "Carolina Panthers",
@@ -47,6 +52,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Carolina",
     color: "#0085CA",
     coordinates: [35.2259, -80.8529],
+    logoUrl: "/logos/Carolina_Panthers_logo.svg",
   },
   {
     team: "Chicago Bears",
@@ -55,6 +61,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Chicago",
     color: "#0B162A",
     coordinates: [41.8623, -87.6167],
+    logoUrl: "/logos/Chicago_Bears_logo.svg",
   },
   {
     team: "Cincinnati Bengals",
@@ -63,6 +70,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Cincinnati",
     color: "#FB4F14",
     coordinates: [39.0954, -84.516],
+    logoUrl: "/logos/Cincinnati_Bengals_logo.svg",
   },
   {
     team: "Cleveland Browns",
@@ -71,6 +79,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Cleveland",
     color: "#311D00",
     coordinates: [41.5061, -81.6996],
+    logoUrl: "/logos/Cleveland_Browns_logo.svg",
   },
   {
     team: "Dallas Cowboys",
@@ -79,14 +88,16 @@ export const stadiums: Stadium[] = [
     teamCity: "Dallas",
     color: "#003594",
     coordinates: [32.7479, -97.0928],
+    logoUrl: "/logos/Dallas_Cowboys.svg",
   },
   {
     team: "Denver Broncos",
     stadium: "Empower Field at Mile High",
     city: "Denver",
     teamCity: "Denver",
-    color: "#FB4F14",
+    color: "#FB4F14", // <-- Updated Color
     coordinates: [39.7439, -105.0201],
+    logoUrl: "/logos/Denver_Broncos_logo.svg",
   },
   {
     team: "Detroit Lions",
@@ -95,6 +106,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Detroit",
     color: "#0076B6",
     coordinates: [42.34, -83.0456],
+    logoUrl: "/logos/Detroit_Lions_logo.svg",
   },
   {
     team: "Green Bay Packers",
@@ -103,6 +115,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Green Bay",
     color: "#203731",
     coordinates: [44.5013, -88.0622],
+    logoUrl: "/logos/Green_Bay_Packers_logo.svg",
   },
   {
     team: "Houston Texans",
@@ -111,6 +124,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Houston",
     color: "#03202F",
     coordinates: [29.6847, -95.4107],
+    logoUrl: "/logos/Houston_Texans_logo.svg",
   },
   {
     team: "Indianapolis Colts",
@@ -119,6 +133,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Indianapolis",
     color: "#002C5F",
     coordinates: [39.7601, -86.1639],
+    logoUrl: "/logos/Indianapolis_Colts_logo.svg",
   },
   {
     team: "Jacksonville Jaguars",
@@ -127,6 +142,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Jacksonville",
     color: "#006778",
     coordinates: [30.3239, -81.6373],
+    logoUrl: "/logos/Jacksonville_Jaguars_logo.svg",
   },
   {
     team: "Kansas City Chiefs",
@@ -135,6 +151,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Kansas City",
     color: "#E31837",
     coordinates: [39.0489, -94.4839],
+    logoUrl: "/logos/Kansas_City_Chiefs_logo.svg",
   },
   {
     team: "Las Vegas Raiders",
@@ -143,6 +160,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Las Vegas",
     color: "#A5ACAF",
     coordinates: [36.0908, -115.1837],
+    logoUrl: "/logos/Las_Vegas_Raiders_logo.svg",
   },
   {
     team: "Los Angeles Chargers",
@@ -151,6 +169,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Los Angeles",
     color: "#0080C6",
     coordinates: [33.9535, -118.3392],
+    logoUrl: "/logos/NFL_Chargers_logo.svg",
   },
   {
     team: "Los Angeles Rams",
@@ -159,6 +178,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Los Angeles",
     color: "#FFD100",
     coordinates: [33.9535, -118.3392],
+    logoUrl: "/logos/NFL_Rams_logo.svg",
   },
   {
     team: "Miami Dolphins",
@@ -167,6 +187,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Miami",
     color: "#008E97",
     coordinates: [25.958, -80.2389],
+    logoUrl: "/logos/Miami_Dolphins_logo.svg",
   },
   {
     team: "Minnesota Vikings",
@@ -175,6 +196,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Minnesota",
     color: "#4F2683",
     coordinates: [44.9736, -93.2578],
+    logoUrl: "/logos/Minnesota_Vikings_logo.svg",
   },
   {
     team: "New England Patriots",
@@ -183,6 +205,7 @@ export const stadiums: Stadium[] = [
     teamCity: "New England",
     color: "#C60C30",
     coordinates: [42.0909, -71.2643],
+    logoUrl: "/logos/New_England_Patriots_logo.svg",
   },
   {
     team: "New Orleans Saints",
@@ -191,6 +214,7 @@ export const stadiums: Stadium[] = [
     teamCity: "New Orleans",
     color: "#D3BC8D",
     coordinates: [29.951, -90.0812],
+    logoUrl: "/logos/New_Orleans_Saints_logo.svg",
   },
   {
     team: "New York Giants",
@@ -199,6 +223,7 @@ export const stadiums: Stadium[] = [
     teamCity: "New York",
     color: "#0B2265",
     coordinates: [40.8135, -74.0745],
+    logoUrl: "/logos/New_York_Giants_logo.svg",
   },
   {
     team: "New York Jets",
@@ -207,6 +232,7 @@ export const stadiums: Stadium[] = [
     teamCity: "New York",
     color: "#125740",
     coordinates: [40.8135, -74.0745],
+    logoUrl: "/logos/New_York_Jets_logo.svg",
   },
   {
     team: "Philadelphia Eagles",
@@ -215,6 +241,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Philadelphia",
     color: "#004C54",
     coordinates: [39.9008, -75.1675],
+    logoUrl: "/logos/Philadelphia_Eagles_logo.svg",
   },
   {
     team: "Pittsburgh Steelers",
@@ -223,6 +250,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Pittsburgh",
     color: "#FFB612",
     coordinates: [40.4468, -80.0158],
+    logoUrl: "/logos/Pittsburgh_Steelers_logo.svg",
   },
   {
     team: "San Francisco 49ers",
@@ -231,6 +259,7 @@ export const stadiums: Stadium[] = [
     teamCity: "San Francisco",
     color: "#AA0000",
     coordinates: [37.4033, -121.9697],
+    logoUrl: "/logos/San_Francisco_49ers_logo.svg",
   },
   {
     team: "Seattle Seahawks",
@@ -239,6 +268,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Seattle",
     color: "#69BE28",
     coordinates: [47.5952, -122.3316],
+    logoUrl: "/logos/Seattle_Seahawks_logo.svg",
   },
   {
     team: "Tampa Bay Buccaneers",
@@ -247,6 +277,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Tampa Bay",
     color: "#D50A0A",
     coordinates: [27.9759, -82.5033],
+    logoUrl: "/logos/Tampa_Bay_Buccaneers_logo.svg",
   },
   {
     team: "Tennessee Titans",
@@ -255,6 +286,7 @@ export const stadiums: Stadium[] = [
     teamCity: "Tennessee",
     color: "#4B92DB",
     coordinates: [36.1665, -86.7713],
+    logoUrl: "/logos/Tennessee_Titans_logo.svg",
   },
   {
     team: "Washington Commanders",
@@ -263,5 +295,6 @@ export const stadiums: Stadium[] = [
     teamCity: "Washington",
     color: "#5A1414",
     coordinates: [38.9077, -76.8645],
+    logoUrl: "/logos/Washington_Commanders_logo.svg",
   },
 ];
