@@ -1,12 +1,19 @@
 "use client";
 
-import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  GeoJSON,
+  CircleMarker,
+  Popup,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
 import { Topology } from "topojson-specification";
 import { FeatureCollection } from "geojson";
+import { stadiums } from "@/data/stadiums"; // Import the stadiums data
 
 export default function NflMap() {
   // State to hold the GeoJSON data for the US states
@@ -16,7 +23,6 @@ export default function NflMap() {
     // This function fetches the map data when the component loads
     const getMapData = async () => {
       try {
-        console.log("Fetching US map data...");
         // Fetch a standard US geography file from a reliable CDN
         const usTopology = (await d3.json(
           "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json",
@@ -28,7 +34,6 @@ export default function NflMap() {
           usTopology.objects.states,
         ) as FeatureCollection;
 
-        console.log("Successfully loaded and converted map data:", geoJson);
         setUsStates(geoJson);
       } catch (error) {
         console.error("Failed to load map data:", error);
@@ -48,6 +53,14 @@ export default function NflMap() {
     };
   };
 
+  // Define the style for the black stadium markers
+  const stadiumMarkerStyle = {
+    color: "black",
+    fillColor: "black",
+    fillOpacity: 1,
+    radius: 3,
+  };
+
   return (
     <MapContainer
       center={[39.8283, -98.5795]} // Center of the US
@@ -61,6 +74,21 @@ export default function NflMap() {
       />
       {/* If usStates data exists, render it on the map */}
       {usStates && <GeoJSON data={usStates} style={getStateStyle} />}
+
+      {/* Map over the stadiums array and plot a black dot for each one */}
+      {stadiums.map((stadium) => (
+        <CircleMarker
+          key={stadium.stadium}
+          center={stadium.coordinates as [number, number]} // Leaflet expects [lat, lon]
+          pathOptions={stadiumMarkerStyle}
+        >
+          <Popup>
+            <b>{stadium.team}</b>
+            <br />
+            {stadium.stadium}
+          </Popup>
+        </CircleMarker>
+      ))}
     </MapContainer>
   );
 }
