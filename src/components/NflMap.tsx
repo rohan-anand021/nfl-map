@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { geoVoronoi } from "d3-geo-voronoi";
 import * as topojson from "topojson-client";
-import { Topology } from "topojson-specification";
+import { Topology, GeometryObject } from "topojson-specification";
 import { stadiums, Stadium } from "@/data/stadiums";
 import { Feature, Point } from "geojson";
 import * as turf from "@turf/turf";
@@ -20,13 +20,13 @@ interface StadiumProperties {
 }
 
 // Define the structure of the data that D3's geoVoronoi attaches
-interface VoronoiFeature extends d3.GeoPermissibleObjects {
+type VoronoiFeature = d3.GeoPermissibleObjects & {
   properties: {
     site: {
       properties: StadiumProperties;
     };
   };
-}
+};
 
 // A combined type for the data passed to the event handlers
 type HoverData = Stadium | VoronoiFeature;
@@ -129,7 +129,8 @@ export default function NflMap() {
           .attr("id", "map-clip")
           .append("path")
           .datum(topojson.feature(usTopology, usTopology.objects.states))
-          .attr("d", pathGenerator);
+          // **FIXED**: Explicitly type 'd' to match what pathGenerator expects
+          .attr("d", (d) => pathGenerator(d as d3.GeoPermissibleObjects) || "");
 
         svg
           .append("g")
@@ -137,13 +138,15 @@ export default function NflMap() {
           .selectAll("path")
           .data(voronoiPolygons.features)
           .join("path")
+          // **FIXED**: The data is known here, so we can cast 'd' to its specific type
+          .attr("d", (d) => pathGenerator(d as VoronoiFeature) || "")
           .attr(
             "fill",
             (d) => (d as VoronoiFeature).properties.site.properties.color,
           )
           .attr("fill-opacity", 0.8)
           .style("cursor", "pointer")
-          .on("mouseover", handleMouseOver as any) // Use 'as any' here to bridge D3's event typing with our specific HoverData
+          .on("mouseover", (event, d) => handleMouseOver(event, d as HoverData))
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
 
@@ -153,13 +156,14 @@ export default function NflMap() {
             topojson.mesh(
               usTopology,
               usTopology.objects.states,
-              (a, b) => a !== b,
+              (a: GeometryObject, b: GeometryObject) => a !== b,
             ),
           )
           .attr("fill", "none")
           .attr("stroke", "white")
-          .attr("stroke-linejoin", "round");
-        svg.selectAll("path").attr("d", pathGenerator);
+          .attr("stroke-linejoin", "round")
+          // **FIXED**: Explicitly type 'd' here as well
+          .attr("d", (d) => pathGenerator(d as d3.GeoPermissibleObjects) || "");
 
         svg
           .append("g")
@@ -176,7 +180,7 @@ export default function NflMap() {
           .attr("stroke", "white")
           .attr("stroke-width", 0.5)
           .style("cursor", "pointer")
-          .on("mouseover", handleMouseOver as any)
+          .on("mouseover", (event, d) => handleMouseOver(event, d as HoverData))
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
 
